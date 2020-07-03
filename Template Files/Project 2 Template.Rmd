@@ -24,7 +24,7 @@ The data set contains articles that are published on all 7 days of the week.  In
 
 ```{r data_preprocess}
 #Read in raw data
-news <- read_csv("OnlineNewsPopularity.csv")
+news <- read_csv("/Users/Saara/Documents/NC State/ST558/Project 2/Project2/Data/OnlineNewsPopularity.csv")
 
 #Create day of week variable for parameters
 news2 <- news %>% mutate(day = ifelse(weekday_is_monday==1, "Monday", 

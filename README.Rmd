@@ -3,6 +3,9 @@ title: "README"
 output: github_document
 ---
 
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
 
 This file will contain only text
 
