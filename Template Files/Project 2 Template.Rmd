@@ -47,13 +47,81 @@ dim2 <- dim(news_subset)
 
 #Delete variables that are non-predictive
 final_subset <- news_subset %>% select(-url, -timedelta, -starts_with("weekday_is"), -day, -starts_with("LDA"), -is_weekend)
-summary(final_subset)
+dim3 <- dim(final_subset)
 ```
 
-Overall, the Online News Popularity data has *`r dim[1]`* observations and *`r dim[2]`* variables.  There are a total of *`r dim2[1]`* observations for articles that were published on a `r params$day`, and that is the subset of observations that I will be using for this report.
+Overall, the Online News Popularity data has *`r dim[1]`* observations and *`r dim[2]`* variables.  There are a total of *`r dim2[1]`* observations for articles that were published on a `r params$day`, and that is the subset of observations that I will be using for this report.  From the initial variables, I will be considering *`r dim3[2]`* of them as potentially having an effect on number of shares.
+
+There are 5 groups of variables that have similar themes in this data set. The variables within each group likely have high correlations with each other. The variable groups are about:
+
+  1.  Number of words/keywords/media
+  
+  2. Digital channel type
+  
+  3. Shares by keyword
+  
+  4. Typical shares of articles in Mashable
+  
+  5. Sentiment and Polarity
+
+**Correlation Plots for Number of Word Variables:**
+
+As seen below, many of the variables are highly correlated and might need to be removed.
+
+```{r Var_Explore}
+#Group 1
+num <- final_subset %>% select(starts_with("n_"), starts_with("num"), average_token_length)
+pairs(num)
+```
+
+**Data Channel Type:**
+
+A correlation plot of the data channel variables shows that each of them is mutually exclusive and therefore can be combined into one categorical variable.
+
+```{r Var_Explore2}
+final_subset <- final_subset %>% mutate(d_channel = ifelse(data_channel_is_lifestyle==1, "lifestyle", 
+                                      ifelse(data_channel_is_entertainment==1, "entertainment",
+                                             ifelse(data_channel_is_bus==1, "business", 
+                                                    ifelse(data_channel_is_socmed==1, "social media",
+                                                           ifelse(data_channel_is_tech==1, "tech", "world")))))) %>% select(-starts_with("data_channel"))
+
+final_subset$d_channel <- as_factor(final_subset$d_channel) 
+summary(final_subset$d_channel)
+```
 
 
+**Shares by Keyword Variables:**
 
+As seen below, many of the variables seem correlated and might need to be removed.
 
+```{r Var_Explore3}
 
+kw <- final_subset %>% select(starts_with("kw"))
+pairs(kw)
+```
 
+**Mashable Shares Variables:**
+
+These variables seem to have very similar distributions. It is not clear whether there will be any relationship with overall shares.
+
+```{r Var_Explore4}
+
+mash <- final_subset %>% select(starts_with("self"), shares)
+pairs(mash)
+```
+
+**Sentiment/Polarity Variables:**
+
+When comparing variables measuring positive and negative polarities, there seems to be moderate to strong correlations.
+
+```{r Var_Explore5}
+pos <- final_subset %>% select(contains("positive"))
+pairs(pos)
+
+neg <- final_subset %>% select(contains("negative"))
+pairs(neg)
+```
+
+## Modeling
+
+First, I will split the data into training and test sets.  The training data set will contain 70% of the data observations, and the test set will contain the remaining 30%.
