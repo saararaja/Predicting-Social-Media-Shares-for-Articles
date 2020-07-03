@@ -1,40 +1,7 @@
 ---
 title: "README"
 output: github_document
-params:
-  day: "Monday"
 ---
-
-```{r, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE)
-```
-
-## Introduction
-
-```{r data_in}
-library(tidyverse)
-news <- read_csv("OnlineNewsPopularity.csv")
-```
-
-```{r new_var}
-#Create day of week variable
-news2 <- news %>% mutate(day = ifelse(weekday_is_monday==1, "Monday", 
-                                      ifelse(weekday_is_tuesday==1, "Tuesday",
-                                             ifelse(weekday_is_wednesday==1, "Wednesday", 
-                                                    ifelse(weekday_is_thursday==1, "Thursday",
-                                                           ifelse(weekday_is_friday==1, "Friday",
-                                                                  ifelse(weekday_is_saturday==1, "Saturday", "Sunday")))))))
-news2$day <- as.factor(news2$day)
-summary(news2)
-dim(news2)
-```
-
-
-```{r subset}
-news_subset <- news2 %>% filter(day == params$day)
-summary(news_subset)
-dim(news_subset)
-```
 
 
 

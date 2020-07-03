@@ -1,0 +1,59 @@
+---
+output: github_document
+params:
+  day: "Monday"
+---
+
+# Project 2: `r params$day` Data
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r libraries}
+library(tidyverse)
+```
+
+## Introduction: 
+
+In this project I will be using the `OnlineNewsPopularity.csv` data, which is a data set about various articles that are published along with various article and publishing attributes.  The goal of this project is to accurately predict the number of times that a particular article will be "shared" on social media given its attributes.
+
+The data set contains articles that are published on all 7 days of the week.  In this report, I will *only* be considering articles that were published on a **`r params$day`**.  In order to predict the number of shares, I will first build a Linear Regression model and then a Random Forest model on training data.  I will then compare the performance of both on a test data set and select the final predictive model. 
+
+## Data Summary
+
+```{r data_preprocess}
+#Read in raw data
+news <- read_csv("OnlineNewsPopularity.csv")
+
+#Create day of week variable for parameters
+news2 <- news %>% mutate(day = ifelse(weekday_is_monday==1, "Monday", 
+                                      ifelse(weekday_is_tuesday==1, "Tuesday",
+                                             ifelse(weekday_is_wednesday==1, "Wednesday", 
+                                                    ifelse(weekday_is_thursday==1, "Thursday",
+                                                           ifelse(weekday_is_friday==1, "Friday",
+                                                                  ifelse(weekday_is_saturday==1, "Saturday", "Sunday")))))))
+
+#Convert day to a factor
+news2$day <- as.factor(news2$day)
+
+dim <- dim(news2)
+```
+
+```{r subset}
+# Create the subset of data that equals the correct parameter
+news_subset <- news2 %>% filter(day == params$day)
+dim2 <- dim(news_subset)
+
+#Delete variables that are non-predictive
+final_subset <- news_subset %>% select(-url, -timedelta, -starts_with("weekday_is"), -day, -starts_with("LDA"), -is_weekend)
+summary(final_subset)
+```
+
+Overall, the Online News Popularity data has *`r dim[1]`* observations and *`r dim[2]`* variables.  There are a total of *`r dim2[1]`* observations for articles that were published on a `r params$day`, and that is the subset of observations that I will be using for this report.
+
+
+
+
+
+
