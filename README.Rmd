@@ -5,18 +5,18 @@ params:
   day: "Monday"
 ---
 
-```{r setup, include=FALSE}
+```{r, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ## Introduction
 
-```{r data}
+```{r data_in}
 library(tidyverse)
 news <- read_csv("OnlineNewsPopularity.csv")
 ```
 
-```{r newvar}
+```{r new_var}
 #Create day of week variable
 news2 <- news %>% mutate(day = ifelse(weekday_is_monday==1, "Monday", 
                                       ifelse(weekday_is_tuesday==1, "Tuesday",
@@ -35,6 +35,14 @@ news_subset <- news2 %>% filter(day == params$day)
 summary(news_subset)
 dim(news_subset)
 ```
+
+
+
+
+
+
+
+
 
 
 
