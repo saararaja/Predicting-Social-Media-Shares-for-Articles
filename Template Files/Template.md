@@ -136,6 +136,8 @@ Here is the summary of the first linear model. Looking at the t statistics and p
 
 I will now update the linear regression model, only including the statistically significant predictors. Hopefully this will increase the predictivity of the model.
 
+Here is the summary for the second iteration of the model. The adjusted-R<sup>2</sup> still is low despite the majority of the predictors being statistically significant now.
+
     ## 
     ## Call:
     ## lm(formula = shares ~ data_channel_is_entertainment + kw_min_min + 
@@ -163,12 +165,9 @@ I will now update the linear regression model, only including the statistically 
     ## Multiple R-squared:  0.02467,    Adjusted R-squared:  0.02321 
     ## F-statistic: 16.82 on 7 and 4654 DF,  p-value: < 2.2e-16
 
-![](Template_files/figure-markdown_github/Lin2-1.png)
+Looking at the plots for the model, it seems that there are leverage points affecting the predictions. ![](Template_files/figure-markdown_github/unnamed-chunk-2-1.png)
 
-![](Template_files/figure-markdown_github/Leverage-1.png)
-
-    ## 1362 
-    ## 1362
+I will now remove the leverage points and create the final linear model. As seen below, the adjusted R<sup>2</sup> has improved a bit for about a 6% explanation of variability, but the RSE has reduced quite a bit. I am assuming that a non-linear model will perform much better for this prediction.
 
     ## 
     ## Call:
@@ -197,26 +196,39 @@ I will now update the linear regression model, only including the statistically 
     ## Multiple R-squared:  0.05922,    Adjusted R-squared:  0.05778 
     ## F-statistic: 41.24 on 7 and 4586 DF,  p-value: < 2.2e-16
 
-![](Template_files/figure-markdown_github/Leverage-2.png)
+### Non-Linear Models
 
-### Non-Linear Model
-
-Regression Tree
+First, I will fit a simple Regression Tree in order to predict shares. Here is the code below:
 
 ``` r
 set.seed(100)
-trctrl <- trainControl(method="repeatedcv", number=10)
-
-tree_fit <- train(shares ~., data = dTrain, method = "rpart", trControl = trctrl,
+trctrl <- trainControl(method="repeatedcv", number=10, repeats = 3)
+metric = 'RMSE'
+tree_fit <- train(shares ~., data = dTrain, method = "rpart", metric = metric, trControl = trctrl,
                  preProcess = c("center", "scale") )
 ```
 
-    ## Warning in nominalTrainWorkflow(x = x, y = y, wts = weights, info = trainInfo, :
-    ## There were missing values in resampled performance measures.
-
-I will fit the bagged tree with the code below. The method is specified to `treebag`.
+I will also fit a bagged tree to predict shares. Here is the code for that:
 
 ``` r
-bag_fit <- train(shares ~., data = dTrain, method = "treebag", trControl = trctrl,
+bag_fit <- train(shares ~., data = dTrain, method = "treebag", metric = metric, trControl = trctrl,
                  preProcess = c("center", "scale") )
 ```
+
+Test Set Prediction
+-------------------
+
+I will fit each of the 3 models (Linear Regression, Regression Tree, Bagged Tree) on the test data set.
+
+Here are the corresponding RMSE values:
+
+-   The RMSE for the Linear Regression model on the test set is 1.645898710^{4}.
+
+-   The RMSE for the Regression Tree model on the test set is 1.650817810^{4}.
+
+-   The RMSE for the Bagged Tree model on the test set is 1.657187610^{4}.
+
+Conclusion
+----------
+
+Comparing the linear and non-linear methods based on test MSE, the Linear Regression model performed the best in predicting number of shares, despite having a high MSE and low adjusted R<sup>2</sup> on its own.

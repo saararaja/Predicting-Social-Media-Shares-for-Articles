@@ -7,12 +7,13 @@ params:
 # Project 2: `r params$day` Data
 
 ```{r, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r libraries}
 library(tidyverse)
 library(caret)
+library(modelr)
 ```
 
 ## Introduction: 
@@ -174,9 +175,6 @@ I will now remove the leverage points and create the final linear model.  As see
 w <- abs(rstudent(Lin2)) < 3 & abs(cooks.distance(Lin2)) < 4/nrow(Lin2$model)
 Lin4 <- update(Lin2, weights=as.numeric(w))
 summary(Lin4)
-
-par(mfrow=c(2,2))
-plot(Lin4)
 ```
 
 
@@ -186,9 +184,9 @@ First, I will fit a simple Regression Tree in order to predict shares.  Here is 
 
 ```{r tree_train, echo=TRUE}
 set.seed(100)
-trctrl <- trainControl(method="repeatedcv", number=10)
-
-tree_fit <- train(shares ~., data = dTrain, method = "rpart", trControl = trctrl,
+trctrl <- trainControl(method="repeatedcv", number=10, repeats = 3)
+metric = 'RMSE'
+tree_fit <- train(shares ~., data = dTrain, method = "rpart", metric = metric, trControl = trctrl,
                  preProcess = c("center", "scale") )
 ```
 
@@ -196,7 +194,44 @@ tree_fit <- train(shares ~., data = dTrain, method = "rpart", trControl = trctrl
 I will also fit a bagged tree to predict shares.  Here is the code for that:
 
 ```{r bag_train, echo=TRUE}
-bag_fit <- train(shares ~., data = dTrain, method = "treebag", trControl = trctrl,
+bag_fit <- train(shares ~., data = dTrain, method = "treebag", metric = metric, trControl = trctrl,
                  preProcess = c("center", "scale") )
+```
 
 
+## Test Set Prediction
+
+I will fit each of the 3 models (Linear Regression, Regression Tree, Bagged Tree) on the test data set.
+
+```{r test}
+#Linear Regression
+Lin_test <- predict(Lin4, newdata = dTest)
+#Regression Tree
+tree_test <- predict(tree_fit, newdata = dTest)
+#Bagged Tree
+bag_test <- predict(bag_fit, newdata = dTest)
+```
+
+
+```{r rmse}
+rmse_lin <- sqrt(mean((Lin_test - dTest$shares)^2))
+rmse_tree <- sqrt(mean((tree_test - dTest$shares)^2))
+rmse_bag <- sqrt(mean((bag_test - dTest$shares)^2))
+
+# rmse_lin
+# rmse_tree
+# rmse_bag
+```
+
+Here are the corresponding RMSE values:
+
+* The RMSE for the Linear Regression model on the test set is `r rmse_lin`.
+
+* The RMSE for the Regression Tree model on the test set is `r rmse_tree`.
+
+* The RMSE for the Bagged Tree model on the test set is `r rmse_bag`.
+
+
+## Conclusion
+
+Comparing the linear and non-linear methods based on test MSE, the Linear Regression model performed the best in predicting number of shares, despite having a high MSE and low adjusted R^2^ on its own.
