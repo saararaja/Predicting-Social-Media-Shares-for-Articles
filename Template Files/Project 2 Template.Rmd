@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 
 ```{r libraries}
 library(tidyverse)
+library(caret)
 ```
 
 ## Introduction: 
@@ -76,17 +77,17 @@ pairs(num)
 
 **Data Channel Type:**
 
-A correlation plot of the data channel variables shows that each of them is mutually exclusive and therefore can be combined into one categorical variable.
+A correlation plot of the data channel variables shows that each of them is mutually exclusive and therefore can be considered dummy variables for one categorical variable.
 
 ```{r Var_Explore2}
-final_subset <- final_subset %>% mutate(d_channel = ifelse(data_channel_is_lifestyle==1, "lifestyle", 
-                                      ifelse(data_channel_is_entertainment==1, "entertainment",
-                                             ifelse(data_channel_is_bus==1, "business", 
-                                                    ifelse(data_channel_is_socmed==1, "social media",
-                                                           ifelse(data_channel_is_tech==1, "tech", "world")))))) %>% select(-starts_with("data_channel"))
-
-final_subset$d_channel <- as_factor(final_subset$d_channel) 
-summary(final_subset$d_channel)
+# final_subset <- final_subset %>% mutate(d_channel = ifelse(data_channel_is_lifestyle==1, "lifestyle", 
+#                                       ifelse(data_channel_is_entertainment==1, "entertainment",
+#                                              ifelse(data_channel_is_bus==1, "business", 
+#                                                     ifelse(data_channel_is_socmed==1, "social media",
+#                                                            ifelse(data_channel_is_tech==1, "tech", "world")))))) %>% select(-starts_with("data_channel"))
+# 
+# final_subset$d_channel <- as_factor(final_subset$d_channel) 
+# summary(final_subset$d_channel)
 ```
 
 
@@ -125,3 +126,71 @@ pairs(neg)
 ## Modeling
 
 First, I will split the data into training and test sets.  The training data set will contain 70% of the data observations, and the test set will contain the remaining 30%.
+
+Dimensions of the train and test sets: 
+
+```{r data_split}
+set.seed(100)
+train <- sample(1:nrow(final_subset), size = nrow(final_subset)*0.7)
+test <- setdiff(1:nrow(final_subset), train)
+
+dTrain <- final_subset[train, ]
+dTest <- final_subset[test, ]
+
+dim(dTrain)
+dim(dTest)
+```
+
+### Linear Model
+
+I will first begin by fitting a linear regression model with ALL of the variables.  
+
+Here is the summary of the first linear model.  Looking at the t statistics and p-values, the majority of predictors are not statistically significant for predicting shares.  The model overall is statistically significant, but has an incredibly low adjusted-R^2^ value (0.0239).
+
+```{r Lin1}
+Lin1 <- lm(shares~., data = dTrain)
+summary(Lin1)
+```
+
+I will now update the linear regression model, only including the statistically significant predictors. Hopefully this will increase the predictivity of the model.
+
+```{r Lin2}
+Lin2 <- lm(shares~data_channel_is_entertainment + kw_min_min + kw_max_max + kw_avg_max + kw_max_avg + kw_avg_avg + min_positive_polarity, data=dTrain)
+summary(Lin2)
+
+#plots for linear fit
+par(mfrow=c(2,2))
+plot(Lin2)
+```
+
+
+```{r Leverage}
+plot(hatvalues(Lin2))
+which.max(hatvalues(Lin2))
+
+#Remove leverage points
+w <- abs(rstudent(Lin2)) < 3 & abs(cooks.distance(Lin2)) < 4/nrow(Lin2$model)
+Lin4 <- update(Lin2, weights=as.numeric(w))
+summary(Lin4)
+
+par(mfrow=c(2,2))
+plot(Lin4)
+```
+
+
+### Non-Linear Model
+
+```{r tree_train, echo=TRUE}
+set.seed(100)
+trctrl <- trainControl(method="repeatedcv", number=10)
+
+tree_fit <- train(shares ~., data = dTrain, method = "rpart", trControl = trctrl,
+                 preProcess = c("center", "scale") )
+
+summary(tree_fit)
+```
+
+
+
+
+
